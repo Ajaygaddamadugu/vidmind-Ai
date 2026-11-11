@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+server/dist/
+client/dist/
+
+# Secrets — never commit real keys
+.env
+.env.*
+!.env.example
+
+# Runtime data
+server/db/*.sqlite
+server/db/*.sqlite-journal
+server/db/*.sqlite-shm
+server/db/*.sqlite-wal
+*.sqlite
+*.sqlite-*
+server/downloads/
+downloads/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Logs / OS / editor
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
