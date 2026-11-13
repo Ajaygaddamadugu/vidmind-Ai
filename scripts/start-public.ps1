@@ -52,3 +52,22 @@ if (-not $url) { throw "Tunnel did not start. See $tunnelLog" }
 
 Set-Content -Path (Join-Path $logDir 'public-url.txt') -Value $url -Encoding utf8
 Write-Host "PUBLIC LINK: $url"
+
+# 3. Point the permanent GitHub Pages link at the new tunnel.
+#    Uses a separate clone of the gh-pages branch in %LOCALAPPDATA%\VidMind\pages (skipped if absent),
+#    so the project folder is never touched. Pushing gh-pages does not trigger a Render deploy.
+$pages = Join-Path $logDir 'pages'
+if (Test-Path (Join-Path $pages '.git')) {
+  try {
+    $json = @{ url = $url; updatedAt = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ') } | ConvertTo-Json -Compress
+    [IO.File]::WriteAllText((Join-Path $pages 'url.json'), "$json`n")   # UTF-8 without BOM
+    git -C $pages pull --quiet --rebase origin gh-pages
+    git -C $pages add url.json
+    git -C $pages commit --quiet -m "Update public link"
+    git -C $pages push --quiet origin gh-pages
+    if ($LASTEXITCODE -ne 0) { throw "git push failed (exit $LASTEXITCODE)" }
+    Write-Host "PERMANENT LINK: https://ajaygaddamadugu.github.io/vidmind-Ai/ (updates within a minute)"
+  } catch {
+    Write-Warning "Could not update the GitHub Pages link: $_"
+  }
+}
