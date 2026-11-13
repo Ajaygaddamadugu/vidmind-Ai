@@ -30,9 +30,21 @@ function urlForRoute(route: Route): string {
   return route.platform === 'instagram' ? '?p=instagram' : window.location.pathname;
 }
 
-const PLATFORMS: { id: Platform; label: string; icon: typeof Youtube; active: string }[] = [
-  { id: 'youtube', label: 'YouTube', icon: Youtube, active: 'text-rose-400' },
-  { id: 'instagram', label: 'Instagram', icon: Instagram, active: 'text-fuchsia-400' },
+const PLATFORMS: { id: Platform; label: string; icon: typeof Youtube; active: string; hoverIcon: string }[] = [
+  {
+    id: 'youtube',
+    label: 'YouTube',
+    icon: Youtube,
+    active: 'bg-gradient-to-r from-red-600 to-rose-600 shadow-lg shadow-red-900/40',
+    hoverIcon: 'group-hover:text-red-400',
+  },
+  {
+    id: 'instagram',
+    label: 'Instagram',
+    icon: Instagram,
+    active: 'bg-gradient-to-r from-amber-500 via-pink-600 to-purple-600 shadow-lg shadow-pink-900/40',
+    hoverIcon: 'group-hover:text-pink-400',
+  },
 ];
 
 export default function App() {
@@ -62,21 +74,25 @@ export default function App() {
       </div>
 
       <header className="sticky top-0 z-50 border-b border-slate-900 bg-slate-950/80 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:gap-6">
+        {/* Logo left, platform switcher centred (the empty right column keeps it centred). */}
+        <div className="mx-auto grid h-16 max-w-7xl grid-cols-[auto_1fr] items-center gap-3 px-4 md:grid-cols-[1fr_auto_1fr]">
           <a
             href="/"
             onClick={(e) => {
               e.preventDefault();
               goHome();
             }}
-            className="flex flex-shrink-0 items-center gap-2.5"
+            className="flex items-center gap-2.5 justify-self-start"
           >
             <LogoMark className="h-8 w-8 rounded-lg shadow-lg shadow-indigo-950/50" />
-            <span className="hidden text-lg font-bold tracking-tight text-white min-[400px]:inline">VidMind AI</span>
+            <span className="hidden text-lg font-bold tracking-tight text-white sm:inline">VidMind AI</span>
           </a>
 
-          <nav aria-label="Platform" className="flex items-center gap-1 rounded-xl border border-slate-800 bg-slate-900/60 p-1">
-            {PLATFORMS.map(({ id, label, icon: Icon, active }) => {
+          <nav
+            aria-label="Platform"
+            className="flex items-center gap-1 justify-self-center rounded-full border border-slate-700/80 bg-slate-900/90 p-1 shadow-lg shadow-black/30 ring-1 ring-white/5"
+          >
+            {PLATFORMS.map(({ id, label, icon: Icon, active, hoverIcon }) => {
               const selected = platform === id;
               return (
                 <button
@@ -84,16 +100,18 @@ export default function App() {
                   type="button"
                   aria-pressed={selected}
                   onClick={() => navigate({ view: 'home', platform: id })}
-                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-semibold transition cursor-pointer ${
-                    selected ? 'bg-slate-800 text-white shadow' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                  className={`group flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold tracking-wide transition-all duration-200 cursor-pointer sm:px-5 ${
+                    selected ? `${active} text-white` : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                   }`}
                 >
-                  <Icon className={`h-4 w-4 ${selected ? active : ''}`} />
+                  <Icon className={`h-4.5 w-4.5 transition-colors ${selected ? 'text-white' : `text-slate-400 ${hoverIcon}`}`} />
                   {label}
                 </button>
               );
             })}
           </nav>
+
+          <div aria-hidden className="hidden md:block" />
         </div>
       </header>
 
