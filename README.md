@@ -49,7 +49,7 @@ npm run build
 powershell -ExecutionPolicy Bypass -File scripts\start-public.ps1
 ```
 
-This starts the app on port 8080 and opens a free Cloudflare quick tunnel (needs `cloudflared`: `winget install Cloudflare.cloudflared`). The public link is printed and saved to `%LOCALAPPDATA%\VidMind\public-url.txt`, together with the logs. The link changes whenever the tunnel restarts. For a permanent link, the script also updates `url.json` on the `gh-pages` branch, whose page (https://ajaygaddamadugu.github.io/vidmind-Ai/) forwards visitors to the current tunnel and shows an offline notice when the PC is off. It works from a clone of that branch at `%LOCALAPPDATA%\VidMind\pages`. Run `npm run build` again after pulling new code, then rerun the script.
+This starts the app on port 8080 and opens a free Cloudflare quick tunnel (needs `cloudflared`: `winget install Cloudflare.cloudflared`). The public link is printed and saved to `%LOCALAPPDATA%\VidMind\public-url.txt`, together with the logs. The link changes whenever the tunnel restarts. For a permanent link, the script also updates `url.json` in the `vidmind-ai/vidmind-ai.github.io` repo, whose page (https://vidmind-ai.github.io) forwards visitors to the current tunnel and shows an offline notice when the PC is off. It works from a clone of that repo at `%LOCALAPPDATA%\VidMind\pages`. Run `npm run build` again after pulling new code, then rerun the script.
 
 ## Configuration (`server/.env`)
 
