@@ -1,2 +1,2 @@
-yt-dlp>=2026.10.26
+yt-dlp[default]>=2026.10.26  # [default] includes yt-dlp-ejs, needed to solve YouTube JS challenges
 youtube-transcript-api>=1.2.4,<2

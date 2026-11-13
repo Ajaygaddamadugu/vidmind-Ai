@@ -29,6 +29,8 @@ export const env = {
 
   PYTHON_BIN: process.env.PYTHON_BIN || (process.platform === 'win32' ? 'python' : 'python3'),
   YTDLP_COOKIES_FILE: process.env.YTDLP_COOKIES_FILE || '',
+  // Node is always present (it runs this server); set to '' to fall back to yt-dlp's default (deno).
+  YTDLP_JS_RUNTIME: process.env.YTDLP_JS_RUNTIME ?? 'node',
 
   CORS_ORIGIN: (process.env.CORS_ORIGIN || '*')
     .split(',')

@@ -30,6 +30,8 @@ export function runPython(args: string[], timeoutMs = 120_000, maxBufferMb = 50)
 /** Common yt-dlp flags we always want. */
 export function ytdlpBaseArgs(): string[] {
   const args = ['-m', 'yt_dlp', '--no-warnings', '--no-cache-dir', '--no-playlist'];
+  // YouTube needs a JS runtime to solve its player challenges; without one most formats go missing.
+  if (env.YTDLP_JS_RUNTIME) args.push('--js-runtimes', env.YTDLP_JS_RUNTIME);
   if (env.YTDLP_COOKIES_FILE) args.push('--cookies', env.YTDLP_COOKIES_FILE);
   return args;
 }

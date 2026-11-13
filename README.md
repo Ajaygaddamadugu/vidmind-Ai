@@ -53,6 +53,7 @@ Serverless hosts (Vercel or Netlify functions) won't work: the server needs long
 | `MAX_VIDEO_DURATION_SECONDS` | `9000` | 2.5 hours |
 | `DOWNLOAD_FILE_TTL_MINUTES` | `30` | Finished files are deleted after this |
 | `YTDLP_COOKIES_FILE` | – | Path to a cookies.txt file, for when YouTube blocks the server's IP |
+| `YTDLP_JS_RUNTIME` | `node` | JS runtime yt-dlp uses for YouTube's player challenges. Without one, most formats are missing |
 | `PYTHON_BIN` | `python` / `python3` | Python that has the requirements installed |
 
 ## Troubleshooting
