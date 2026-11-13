@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#020617" />
+    <title>VidMind AI</title>
+    <meta name="description" content="Download, summarize and chat with YouTube videos, and download Instagram reels." />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='32' x2='32' y2='0' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%23e11d48'/%3E%3Cstop offset='1' stop-color='%234f46e5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Crect x='7' y='16.2' width='18' height='9.6' rx='2' fill='%23fff'/%3E%3Crect x='7' y='13.4' width='18' height='2.2' rx='.8' fill='%23fff'/%3E%3Crect x='7' y='10.8' width='18' height='2.2' rx='.8' fill='%23fff' transform='rotate(-16 7.4 13)'/%3E%3Cpath d='M14.3 18.6v4.8l4.1-2.4z' fill='url(%23g)'/%3E%3C/svg%3E" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px;
+        background: #020617; color: #e2e8f0;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      .card {
+        width: 100%; max-width: 420px; text-align: center; padding: 32px 24px;
+        border: 1px solid #1e293b; border-radius: 20px; background: rgba(15, 23, 42, 0.6);
+      }
+      .logo { width: 56px; height: 56px; border-radius: 14px; }
+      h1 { margin: 16px 0 6px; font-size: 22px; color: #fff; }
+      p { margin: 0; color: #94a3b8; line-height: 1.6; font-size: 15px; }
+      .spinner {
+        width: 22px; height: 22px; margin: 20px auto 0; border-radius: 50%;
+        border: 3px solid #334155; border-top-color: #a78bfa; animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      button {
+        margin-top: 20px; padding: 10px 18px; border: 0; border-radius: 12px; cursor: pointer;
+        font: inherit; font-weight: 600; color: #fff;
+        background: linear-gradient(90deg, #e11d48, #4f46e5);
+      }
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+        <defs>
+          <linearGradient id="g" x1="0" y1="32" x2="32" y2="0" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#e11d48" /><stop offset="1" stop-color="#4f46e5" />
+          </linearGradient>
+        </defs>
+        <rect width="32" height="32" rx="8" fill="url(#g)" />
+        <g transform="rotate(-16 7.4 13)"><rect x="7" y="10.8" width="18" height="2.2" rx="0.8" fill="#fff" /></g>
+        <rect x="7" y="13.4" width="18" height="2.2" rx="0.8" fill="#fff" />
+        <rect x="7" y="16.2" width="18" height="9.6" rx="2" fill="#fff" />
+        <path d="M14.3 18.6v4.8l4.1-2.4z" fill="url(#g)" />
+      </svg>
+
+      <section id="loading">
+        <h1>Opening VidMind AI…</h1>
+        <p>Connecting you to the server.</p>
+        <div class="spinner" role="status" aria-label="Loading"></div>
+      </section>
+
+      <section id="offline" hidden>
+        <h1>VidMind is offline right now</h1>
+        <p>The server is switched off at the moment. Please try again a little later.</p>
+        <button type="button" onclick="location.reload()">Try again</button>
+      </section>
+    </main>
+
+    <script>
+      // url.json is rewritten automatically each time the VidMind server starts.
+      (async () => {
+        const offline = () => {
+          document.getElementById('loading').hidden = true;
+          document.getElementById('offline').hidden = false;
+        };
+        try {
+          const res = await fetch('url.json?t=' + Date.now(), { cache: 'no-store' });
+          const { url } = await res.json();
+          if (!url) return offline();
+
+          // A dead tunnel link fails to resolve; check before sending the visitor there.
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 10000);
+          await fetch(url + '/health', { mode: 'no-cors', cache: 'no-store', signal: ctrl.signal });
+          clearTimeout(timer);
+
+          // Keep deep links working, e.g. ?v=VIDEO_ID or ?ig=REEL_CODE
+          location.replace(url + '/' + location.search + location.hash);
+        } catch {
+          offline();
+        }
+      })();
+    </script>
+  </body>
+</html>
