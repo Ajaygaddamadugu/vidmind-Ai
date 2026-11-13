@@ -34,9 +34,14 @@ Write-Host "Server running on http://localhost:$port"
 # 2. Cloudflare quick tunnel (restarted each run so the saved link is always current)
 $cloudflared = (Get-Command cloudflared -ErrorAction SilentlyContinue).Source
 if (-not $cloudflared) { $cloudflared = 'C:\Program Files (x86)\cloudflared\cloudflared.exe' }
-Get-Process cloudflared -ErrorAction SilentlyContinue | Stop-Process -Force
-$tunnelLog = Join-Path $logDir 'tunnel.log'
-Remove-Item $tunnelLog -ErrorAction SilentlyContinue
+$running = Get-Process cloudflared -ErrorAction SilentlyContinue
+if ($running) {
+  $running | Stop-Process -Force
+  $running | Wait-Process -Timeout 15 -ErrorAction SilentlyContinue
+}
+# A fresh log per run, so we never read the previous tunnel's (dead) link.
+Get-ChildItem $logDir -Filter 'tunnel*.log' -ErrorAction SilentlyContinue | Remove-Item -ErrorAction SilentlyContinue
+$tunnelLog = Join-Path $logDir ("tunnel-{0}.log" -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
 Start-Process -FilePath $cloudflared -WindowStyle Hidden `
   -ArgumentList @('tunnel', '--no-autoupdate', '--url', "http://localhost:$port", '--logfile', "`"$tunnelLog`"")
 
