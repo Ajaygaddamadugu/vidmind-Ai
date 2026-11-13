@@ -53,7 +53,8 @@ Serverless hosts (Vercel or Netlify functions) won't work: the server needs long
 | `MAX_CONCURRENT_DOWNLOADS` | `3` | Extra downloads wait in a queue |
 | `MAX_VIDEO_DURATION_SECONDS` | `9000` | 2.5 hours |
 | `DOWNLOAD_FILE_TTL_MINUTES` | `30` | Finished files are deleted after this |
-| `YTDLP_COOKIES_FILE` | – | Path to a cookies.txt file, for when YouTube blocks the server's IP |
+| `YTDLP_COOKIES_FILE` | – | Path to a YouTube cookies.txt, for when YouTube blocks the server's IP. Used for downloads and transcripts. Read-only paths (e.g. Render's `/etc/secrets/…`) are fine |
+| `YOUTUBE_PROXY_URL` | – | Proxy for YouTube requests (`http://user:pass@host:port`), if cookies aren't enough |
 | `YTDLP_JS_RUNTIME` | `node` | JS runtime yt-dlp uses for YouTube's player challenges. Without one, most formats are missing |
 | `INSTAGRAM_COOKIES_FILE` | – | cookies.txt from a logged-in Instagram session. Instagram often blocks anonymous requests from cloud servers |
 | `PYTHON_BIN` | `python` / `python3` | Python that has the requirements installed |
@@ -61,6 +62,6 @@ Serverless hosts (Vercel or Netlify functions) won't work: the server needs long
 ## Troubleshooting
 
 - **Downloads fail with "YouTube refused to send this stream"**: update yt-dlp with `pip install -U yt-dlp`, or rebuild the image.
-- **"YouTube is temporarily blocking requests from this server"**: this is common on cloud IPs. Set `YTDLP_COOKIES_FILE`, or route traffic through a residential proxy.
+- **"YouTube is temporarily blocking requests from this server"** (logs show `Failed to extract any player response` or `Sign in to confirm you're not a bot`): this is common on cloud IPs. Set `YTDLP_COOKIES_FILE` (export from a spare Google account), or set `YOUTUBE_PROXY_URL` to a residential proxy.
 - **Instagram says "didn't share this post with us"**: the post is private, or Instagram is limiting anonymous requests from your server. Set `INSTAGRAM_COOKIES_FILE` (use a spare account).
 - **"The configured AI model … is not available"**: NVIDIA retired the model. Pick a current one from the `/v1/models` list.

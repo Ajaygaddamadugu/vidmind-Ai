@@ -32,7 +32,7 @@ export function friendlyInstagramError(raw: string): HttpError {
  */
 export function friendlyYoutubeError(raw: string, platform = 'YouTube'): HttpError {
   const text = raw.toLowerCase();
-  if (text.includes('sign in to confirm') || text.includes('not a bot') || text.includes('http error 429') || text.includes('too many requests')) {
+  if (text.includes('sign in to confirm') || text.includes('not a bot') || text.includes('http error 429') || text.includes('too many requests') || text.includes('failed to extract any player response')) {
     return new HttpError(503, `${platform} is temporarily blocking requests from this server. Please try again in a few minutes.`, 'YT_BLOCKED');
   }
   if (text.includes('private video')) {

@@ -31,6 +31,8 @@ export const env = {
   YTDLP_COOKIES_FILE: process.env.YTDLP_COOKIES_FILE || '',
   // Instagram often requires a logged-in session, especially from cloud IPs.
   INSTAGRAM_COOKIES_FILE: process.env.INSTAGRAM_COOKIES_FILE || '',
+  // Optional proxy (http://user:pass@host:port) for YouTube requests when the server's IP is blocked.
+  YOUTUBE_PROXY_URL: process.env.YOUTUBE_PROXY_URL || '',
   // Node is always present (it runs this server); set to '' to fall back to yt-dlp's default (deno).
   YTDLP_JS_RUNTIME: process.env.YTDLP_JS_RUNTIME ?? 'node',
 

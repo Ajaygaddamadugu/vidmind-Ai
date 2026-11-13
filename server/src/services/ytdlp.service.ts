@@ -184,11 +184,17 @@ const SUBTITLE_EXT = /\.(vtt|srt|ttml|srv\d|json3)$/i;
 export interface MediaSource {
   url: string;
   cookiesFile: string;
+  proxy: string;
   toError: (stderr: string) => HttpError;
 }
 
 export function youtubeSource(videoId: string): MediaSource {
-  return { url: canonicalUrl(videoId), cookiesFile: env.YTDLP_COOKIES_FILE, toError: (e) => friendlyYoutubeError(e) };
+  return {
+    url: canonicalUrl(videoId),
+    cookiesFile: env.YTDLP_COOKIES_FILE,
+    proxy: env.YOUTUBE_PROXY_URL,
+    toError: (e) => friendlyYoutubeError(e),
+  };
 }
 
 export function downloadMedia(
@@ -200,7 +206,7 @@ export function downloadMedia(
 ): DownloadHandle {
   fs.mkdirSync(env.DOWNLOAD_DIR, { recursive: true });
 
-  const args = [...ytdlpBaseArgs(source.cookiesFile), '--newline', '--no-part', '--no-mtime'];
+  const args = [...ytdlpBaseArgs({ cookiesFile: source.cookiesFile, proxy: source.proxy }), '--newline', '--no-part', '--no-mtime'];
   if (ffmpegPath) args.push('--ffmpeg-location', ffmpegPath);
   args.push('-f', formatSelector);
   if (audioOnly) {

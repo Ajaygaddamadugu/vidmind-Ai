@@ -1,5 +1,6 @@
 import path from 'path';
-import { runPython } from './python.service';
+import { runPython, usableCookiesFile } from './python.service';
+import { env } from '../config/env';
 import { translateSegmentsToEnglish } from './translation.service';
 import { HttpError } from '../utils/httpError';
 
@@ -29,7 +30,10 @@ export async function fetchTranscript(
   const scriptPath = path.resolve(__dirname, '../utils/get_transcript.py');
   let raw: any;
   try {
-    const { stdout } = await runPython([scriptPath, videoId], 120_000);
+    const { stdout } = await runPython([scriptPath, videoId], 120_000, 50, {
+      VIDMIND_COOKIES: usableCookiesFile(env.YTDLP_COOKIES_FILE),
+      VIDMIND_PROXY: env.YOUTUBE_PROXY_URL,
+    });
     raw = JSON.parse(stdout);
   } catch (err: any) {
     console.error('[transcript] helper failed:', err.stderr || err.message);

@@ -13,6 +13,7 @@ Output (stdout, single JSON line):
   { success, transcript, language, languageCode, translated, isGenerated,
     original: { language, languageCode, transcript } | null }
 """
+import os
 import sys
 import json
 
@@ -36,6 +37,28 @@ def pick_original(transcript_list):
     return (manual or tracks)[0] if tracks else None
 
 
+def make_api():
+    """Uses the server's YouTube cookies / proxy when configured (cloud IPs are often blocked)."""
+    kwargs = {}
+    proxy = os.environ.get("VIDMIND_PROXY")
+    if proxy:
+        from youtube_transcript_api.proxies import GenericProxyConfig
+        kwargs["proxy_config"] = GenericProxyConfig(http_url=proxy, https_url=proxy)
+    cookies_file = os.environ.get("VIDMIND_COOKIES")
+    if cookies_file:
+        try:
+            import requests
+            from http.cookiejar import MozillaCookieJar
+            jar = MozillaCookieJar(cookies_file)
+            jar.load(ignore_discard=True, ignore_expires=True)
+            session = requests.Session()
+            session.cookies = jar
+            kwargs["http_client"] = session
+        except Exception as exc:  # a broken cookies file shouldn't stop the attempt
+            print(f"cookies ignored: {exc}", file=sys.stderr)
+    return YouTubeTranscriptApi(**kwargs)
+
+
 def main():
     if len(sys.argv) < 2:
         print(json.dumps({"success": False, "error": "No video ID provided"}))
@@ -43,7 +66,7 @@ def main():
 
     video_id = sys.argv[1]
     try:
-        transcript_list = YouTubeTranscriptApi().list(video_id)
+        transcript_list = make_api().list(video_id)
 
         # 1. Native English
         english = None

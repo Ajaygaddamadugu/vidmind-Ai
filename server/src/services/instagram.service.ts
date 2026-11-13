@@ -16,7 +16,7 @@ const inflight = new Map<string, Promise<VideoMetadata>>();
 const STANDARD_HEIGHTS = [2160, 1440, 1080, 720, 480, 360, 240];
 
 export function instagramSource(code: string): MediaSource {
-  return { url: instagramUrl(code), cookiesFile: env.INSTAGRAM_COOKIES_FILE, toError: friendlyInstagramError };
+  return { url: instagramUrl(code), cookiesFile: env.INSTAGRAM_COOKIES_FILE, proxy: '', toError: friendlyInstagramError };
 }
 
 export async function getInstagramInfo(code: string): Promise<VideoMetadata> {
@@ -40,7 +40,7 @@ async function fetchInstagramInfo(code: string): Promise<VideoMetadata> {
   const source = instagramSource(code);
   let stdout: string;
   try {
-    ({ stdout } = await runPython([...ytdlpBaseArgs(source.cookiesFile), '-J', '--', source.url], 60_000));
+    ({ stdout } = await runPython([...ytdlpBaseArgs({ cookiesFile: source.cookiesFile, proxy: source.proxy }), '-J', '--', source.url], 60_000));
   } catch (err: any) {
     const raw = String(err.stderr || err.message || '');
     console.error(`[yt-dlp] instagram metadata failed for ${code}:`, raw.slice(-1500));
