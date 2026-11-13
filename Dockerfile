@@ -38,8 +38,8 @@ ENV NODE_ENV=production \
 
 USER node
 EXPOSE 8080
-# Mount a persistent volume here so the cache (transcripts, summaries, chats) survives redeploys.
-VOLUME ["/app/server/db"]
+# Mount a persistent volume at /app/server/db so the cache (transcripts, summaries, chats) survives redeploys.
+# (No VOLUME instruction: some hosts reject it, and `docker run -v` works without it.)
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD node -e "fetch('http://localhost:'+(process.env.PORT||8080)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 

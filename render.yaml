@@ -1,0 +1,23 @@
+# Render Blueprint — one-click deploy of VidMind AI on the free plan.
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: vidmind-ai
+    runtime: docker
+    plan: free
+    region: singapore # closest Render region to India
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true # redeploy on every push to main
+    envVars:
+      - key: NVIDIA_API_KEY
+        sync: false # Render asks for this value during setup; it is never stored in the repo
+      - key: NODE_ENV
+        value: production
+      # Free plan = 512 MB RAM / 0.1 CPU: one download at a time, videos up to 1 hour.
+      - key: MAX_CONCURRENT_DOWNLOADS
+        value: "1"
+      - key: MAX_VIDEO_DURATION_SECONDS
+        value: "3600"
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "40"
