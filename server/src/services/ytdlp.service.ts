@@ -53,7 +53,9 @@ export async function getVideoMetadata(videoId: string): Promise<VideoMetadata> 
   try {
     ({ stdout } = await runPython([...ytdlpBaseArgs(), '-J', '--', canonicalUrl(videoId)], 90_000));
   } catch (err: any) {
-    throw friendlyYoutubeError(err.stderr || err.message || '');
+    const raw = String(err.stderr || err.message || '');
+    console.error(`[yt-dlp] metadata failed for ${videoId}:`, raw.slice(-1500));
+    throw friendlyYoutubeError(raw);
   }
 
   let info: any;

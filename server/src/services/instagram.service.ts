@@ -42,7 +42,9 @@ async function fetchInstagramInfo(code: string): Promise<VideoMetadata> {
   try {
     ({ stdout } = await runPython([...ytdlpBaseArgs(source.cookiesFile), '-J', '--', source.url], 60_000));
   } catch (err: any) {
-    throw friendlyInstagramError(err.stderr || err.message || '');
+    const raw = String(err.stderr || err.message || '');
+    console.error(`[yt-dlp] instagram metadata failed for ${code}:`, raw.slice(-1500));
+    throw friendlyInstagramError(raw);
   }
 
   let info: any;
