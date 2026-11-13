@@ -40,6 +40,17 @@ On Railway, Render, Fly.io or a VPS:
 
 Serverless hosts (Vercel or Netlify functions) won't work: the server needs long-running processes and local disk.
 
+## Run publicly from a home PC (free)
+
+YouTube blocks most cloud/data-center IPs, but not home internet. To share the app from your own PC:
+
+```powershell
+npm run build
+powershell -ExecutionPolicy Bypass -File scripts\start-public.ps1
+```
+
+This starts the app on port 8080 and opens a free Cloudflare quick tunnel (needs `cloudflared`: `winget install Cloudflare.cloudflared`). The public link is printed and saved to `%LOCALAPPDATA%\VidMind\public-url.txt`, together with the logs. The link changes whenever the tunnel restarts; for a permanent one, use a named Cloudflare tunnel with your own domain. Run `npm run build` again after pulling new code, then rerun the script.
+
 ## Configuration (`server/.env`)
 
 | Variable | Default | Notes |
