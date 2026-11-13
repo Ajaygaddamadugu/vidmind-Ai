@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api, triggerBrowserDownload } from '../api/client';
+import { api, triggerBrowserDownload, type DownloadRequest } from '../api/client';
 import { toast } from '../lib/toast';
 import type { DownloadJob } from '../types';
 
@@ -37,7 +37,7 @@ export function useDownload() {
   }, []);
 
   const start = useCallback(
-    async (input: { videoId: string; qualityId: string; audioTrackId?: string; embedSubtitles?: boolean }) => {
+    async (input: DownloadRequest) => {
       stopPolling();
       setStarting(true);
       setError(null);

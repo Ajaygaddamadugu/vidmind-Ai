@@ -178,8 +178,19 @@ const SUBTITLE_EXT = /\.(vtt|srt|ttml|srv\d|json3)$/i;
  * Runs yt-dlp to download `formatSelector` into DOWNLOAD_DIR/<fileBase>.<ext>.
  * Reports overall progress across the video + audio streams and the merge step.
  */
+/** Where a download comes from. The URL is always one we built, never raw user input. */
+export interface MediaSource {
+  url: string;
+  cookiesFile: string;
+  toError: (stderr: string) => HttpError;
+}
+
+export function youtubeSource(videoId: string): MediaSource {
+  return { url: canonicalUrl(videoId), cookiesFile: env.YTDLP_COOKIES_FILE, toError: (e) => friendlyYoutubeError(e) };
+}
+
 export function downloadMedia(
-  videoId: string,
+  source: MediaSource,
   formatSelector: string,
   audioOnly: boolean,
   fileBase: string,
@@ -187,7 +198,7 @@ export function downloadMedia(
 ): DownloadHandle {
   fs.mkdirSync(env.DOWNLOAD_DIR, { recursive: true });
 
-  const args = [...ytdlpBaseArgs(), '--newline', '--no-part', '--no-mtime'];
+  const args = [...ytdlpBaseArgs(source.cookiesFile), '--newline', '--no-part', '--no-mtime'];
   if (ffmpegPath) args.push('--ffmpeg-location', ffmpegPath);
   args.push('-f', formatSelector);
   if (audioOnly) {
@@ -201,7 +212,7 @@ export function downloadMedia(
     '-o',
     path.join(env.DOWNLOAD_DIR, `${fileBase}.%(ext)s`),
     '--',
-    canonicalUrl(videoId)
+    source.url
   );
 
   const streamCount = audioOnly || !formatSelector.includes('+') ? 1 : 2;
@@ -262,14 +273,14 @@ export function downloadMedia(
       if (stderr.length > 20_000) stderr = stderr.slice(-20_000);
     });
 
-    child.on('error', (err) => reject(friendlyYoutubeError(err.message)));
+    child.on('error', (err) => reject(source.toError(err.message)));
 
     child.on('close', (code) => {
       if (cancelled) return reject(new HttpError(499, 'Download cancelled', 'CANCELLED'));
       if (code !== 0) {
         console.error(`[yt-dlp] download failed (${code}):`, stderr.slice(-2000));
         removeFilesWithPrefix(fileBase);
-        return reject(friendlyYoutubeError(stderr));
+        return reject(source.toError(stderr));
       }
       const wantedExt = audioOnly ? '.mp3' : '.mp4';
       const files = fs.readdirSync(env.DOWNLOAD_DIR).filter((f) => f.startsWith(fileBase));

@@ -1,13 +1,15 @@
 import { Request, Response } from 'express';
 import fs from 'fs';
 import { extractVideoId } from '../utils/youtube';
+import { isInstagramId } from '../utils/instagram';
 import { HttpError } from '../utils/httpError';
 import { cancelDownload, createDownload, getDownload, publicJob } from '../services/download.service';
 
 /** POST /api/downloads  { videoId, qualityId, audioTrackId?, embedSubtitles? } */
 export async function startDownload(req: Request, res: Response) {
-  const { videoId: rawId, qualityId, audioTrackId, embedSubtitles } = req.body || {};
-  const videoId = extractVideoId(rawId);
+  const { videoId: rawId, qualityId, audioTrackId, embedSubtitles, source } = req.body || {};
+  const isInstagram = source === 'instagram';
+  const videoId = isInstagram ? (isInstagramId(rawId) ? rawId : null) : extractVideoId(rawId);
   if (!videoId) throw new HttpError(400, 'Invalid video ID.');
   if (typeof qualityId !== 'string' || !qualityId) throw new HttpError(400, 'Please choose a quality.');
 
@@ -16,6 +18,7 @@ export async function startDownload(req: Request, res: Response) {
     qualityId,
     audioTrackId: typeof audioTrackId === 'string' ? audioTrackId : undefined,
     embedSubtitles: embedSubtitles === true,
+    source: isInstagram ? 'instagram' : 'youtube',
   });
   res.status(202).json({ success: true, data: publicJob(job) });
 }

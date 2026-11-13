@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Download, Film, Music, RotateCcw, Subtitles, X } from 'lucide-react';
-import type { VideoInfo } from '../types';
+import type { Platform, VideoInfo } from '../types';
 import { useDownload } from '../hooks/useDownload';
 import { formatBytes, formatEta } from '../lib/format';
 import { Card, ErrorNote, Spinner } from './ui';
@@ -10,11 +10,12 @@ interface Props {
   video: VideoInfo;
   subtitlesAvailable: boolean;
   subtitlesPending: boolean;
+  source?: Platform;
 }
 
 const PREFERRED = ['1080p', '720p', '480p', '360p'];
 
-export function DownloadPanel({ video, subtitlesAvailable, subtitlesPending }: Props) {
+export function DownloadPanel({ video, subtitlesAvailable, subtitlesPending, source = 'youtube' }: Props) {
   const { job, starting, error, start, cancel, saveAgain, reset, active } = useDownload();
 
   const defaultQuality = useMemo(
@@ -33,7 +34,8 @@ export function DownloadPanel({ video, subtitlesAvailable, subtitlesPending }: P
 
   const audio = video.audioTracks.find((a) => a.id === audioTrackId) || video.audioTracks[0];
   const isAudio = qualityId === 'audio';
-  const canEmbed = !isAudio && subtitlesAvailable;
+  const canEmbed = !isAudio && subtitlesAvailable && source === 'youtube';
+  const request = () => ({ videoId: video.id, qualityId, audioTrackId: audio?.id, embedSubtitles: canEmbed && subtitles, source });
 
   const options = [
     ...video.qualities.map((q) => ({
@@ -98,7 +100,7 @@ export function DownloadPanel({ video, subtitlesAvailable, subtitlesPending }: P
           </label>
         )}
 
-        {!isAudio && (
+        {!isAudio && source === 'youtube' && (
           <label className={`mt-4 flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-900/40 p-3 ${canEmbed ? 'cursor-pointer' : 'opacity-60'}`}>
             <input
               type="checkbox"
@@ -143,7 +145,7 @@ export function DownloadPanel({ video, subtitlesAvailable, subtitlesPending }: P
           ) : job.status === 'failed' ? (
             <ErrorNote
               action={
-                <button type="button" onClick={() => start({ videoId: video.id, qualityId, audioTrackId, embedSubtitles: canEmbed && subtitles })} className={buttonStyles.ghost}>
+                <button type="button" onClick={() => start(request())} className={buttonStyles.ghost}>
                   <RotateCcw className="h-3.5 w-3.5" /> Retry
                 </button>
               }
@@ -189,11 +191,11 @@ export function DownloadPanel({ video, subtitlesAvailable, subtitlesPending }: P
         <button
           type="button"
           disabled={busy}
-          onClick={() => start({ videoId: video.id, qualityId, audioTrackId: audio?.id, embedSubtitles: canEmbed && subtitles })}
+          onClick={() => start(request())}
           className={`${buttonStyles.primary} mt-4 w-full py-3 bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500`}
         >
           {starting ? <Spinner /> : <Download className="h-4 w-4" />}
-          {job?.status === 'completed' ? 'Download another format' : isAudio ? 'Download MP3' : `Download ${qualityId} MP4`}
+          {job?.status === 'completed' ? 'Download another format' : isAudio ? 'Download MP3' : qualityId === 'best' ? 'Download MP4' : `Download ${qualityId} MP4`}
         </button>
       )}
       <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-600">

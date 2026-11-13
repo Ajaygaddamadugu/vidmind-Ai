@@ -2,6 +2,7 @@ import type {
   ChatMessage,
   ChatSource,
   DownloadJob,
+  Platform,
   PrepStatus,
   SummaryData,
   TranscriptData,
@@ -10,6 +11,14 @@ import type {
 
 // Same-origin "/api" by default (Vite proxies it in dev; Express serves the app in prod).
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+
+export interface DownloadRequest {
+  videoId: string;
+  qualityId: string;
+  audioTrackId?: string;
+  embedSubtitles?: boolean;
+  source?: Platform;
+}
 
 export class ApiError extends Error {
   status: number;
@@ -49,6 +58,8 @@ const post = (body: unknown): RequestInit => ({ method: 'POST', body: JSON.strin
 
 export const api = {
   analyze: (url: string) => request<{ video: VideoInfo; status: PrepStatus }>('/videos', post({ url })),
+  analyzeInstagram: (url: string) => request<{ video: VideoInfo }>('/instagram', post({ url })),
+  getInstagram: (code: string) => request<{ video: VideoInfo }>(`/instagram/${encodeURIComponent(code)}`),
   getVideo: (videoId: string) => request<{ video: VideoInfo; status: PrepStatus }>(`/videos/${videoId}`),
   getStatus: (videoId: string) => request<PrepStatus>(`/videos/${videoId}/status`),
   getTranscript: (videoId: string) => request<TranscriptData>(`/videos/${videoId}/transcript`),
@@ -56,7 +67,7 @@ export const api = {
     request<SummaryData>(`/videos/${videoId}/summary${refresh ? '?refresh=1' : ''}`),
   subtitlesUrl: (videoId: string, lang: 'en' | 'original') => `${API_BASE_URL}/videos/${videoId}/subtitles.srt?lang=${lang}`,
 
-  startDownload: (input: { videoId: string; qualityId: string; audioTrackId?: string; embedSubtitles?: boolean }) =>
+  startDownload: (input: DownloadRequest) =>
     request<DownloadJob>('/downloads', post(input)),
   getDownload: (id: string) => request<DownloadJob>(`/downloads/${id}`),
   cancelDownload: (id: string) => request<DownloadJob>(`/downloads/${id}/cancel`, post({})),

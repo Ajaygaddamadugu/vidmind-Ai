@@ -6,6 +6,7 @@ Paste a YouTube link and get:
 - **An English transcript from any language**: real English captions are used first. If there are none, YouTube's own translation is tried, and if that isn't available, the captions are translated with AI. Every timestamp is kept.
 - **A summary**: key takeaways and chapters you can click to jump the player.
 - **Chat with the video**: answers stream in, are grounded in the transcript, and include clickable timestamps and sources.
+- **Instagram reels**: switch to the Instagram tab (or just paste a reel link) to download public reels and video posts as MP4 or MP3. Instagram is download-only.
 
 The stack is React + Vite + Tailwind for the client and Express + SQLite for the server, with yt-dlp, youtube-transcript-api, ffmpeg and NVIDIA NIM for the AI features.
 
@@ -54,10 +55,12 @@ Serverless hosts (Vercel or Netlify functions) won't work: the server needs long
 | `DOWNLOAD_FILE_TTL_MINUTES` | `30` | Finished files are deleted after this |
 | `YTDLP_COOKIES_FILE` | – | Path to a cookies.txt file, for when YouTube blocks the server's IP |
 | `YTDLP_JS_RUNTIME` | `node` | JS runtime yt-dlp uses for YouTube's player challenges. Without one, most formats are missing |
+| `INSTAGRAM_COOKIES_FILE` | – | cookies.txt from a logged-in Instagram session. Instagram often blocks anonymous requests from cloud servers |
 | `PYTHON_BIN` | `python` / `python3` | Python that has the requirements installed |
 
 ## Troubleshooting
 
 - **Downloads fail with "YouTube refused to send this stream"**: update yt-dlp with `pip install -U yt-dlp`, or rebuild the image.
 - **"YouTube is temporarily blocking requests from this server"**: this is common on cloud IPs. Set `YTDLP_COOKIES_FILE`, or route traffic through a residential proxy.
+- **Instagram says "didn't share this post with us"**: the post is private, or Instagram is limiting anonymous requests from your server. Set `INSTAGRAM_COOKIES_FILE` (use a spare account).
 - **"The configured AI model … is not available"**: NVIDIA retired the model. Pick a current one from the `/v1/models` list.

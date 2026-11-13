@@ -1,3 +1,5 @@
+export type Platform = 'youtube' | 'instagram';
+
 export interface VideoQuality {
   id: string;
   height: number;

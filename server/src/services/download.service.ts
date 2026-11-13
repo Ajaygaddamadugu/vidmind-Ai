@@ -6,14 +6,18 @@ import ffmpegPath from 'ffmpeg-static';
 import { env } from '../config/env';
 import { HttpError } from '../utils/httpError';
 import { toSrt } from '../utils/time';
-import { downloadMedia, DownloadHandle, removeFilesWithPrefix } from './ytdlp.service';
+import { downloadMedia, DownloadHandle, MediaSource, removeFilesWithPrefix, youtubeSource } from './ytdlp.service';
 import { getTranscriptData, getVideoInfo } from './video.service';
+import { getInstagramInfo, instagramSource } from './instagram.service';
+
+export type Platform = 'youtube' | 'instagram';
 
 
 export type DownloadStatus = 'queued' | 'downloading' | 'processing' | 'completed' | 'failed' | 'cancelled';
 
 export interface DownloadJob {
   id: string;
+  source: Platform;
   videoId: string;
   title: string;
   qualityId: string;           // '1080p' | ... | 'audio'
@@ -30,6 +34,7 @@ export interface DownloadJob {
   createdAt: number;
   finishedAt: number | null;
   // internal
+  media: MediaSource;
   formatSelector: string;
   fallbackSelector: string;
   audioOnly: boolean;
@@ -62,7 +67,7 @@ function safeFileName(title: string): string {
 }
 
 export function publicJob(job: DownloadJob) {
-  const { formatSelector, fallbackSelector, audioOnly, fileBase, filePath, handle, ...rest } = job;
+  const { media, formatSelector, fallbackSelector, audioOnly, fileBase, filePath, handle, ...rest } = job;
   return rest;
 }
 
@@ -71,34 +76,45 @@ export async function createDownload(input: {
   qualityId: string;
   audioTrackId?: string;
   embedSubtitles?: boolean;
+  source?: Platform;
 }): Promise<DownloadJob> {
-  const info = await getVideoInfo(input.videoId);
+  const source: Platform = input.source === 'instagram' ? 'instagram' : 'youtube';
+  const isInstagram = source === 'instagram';
+  const info = isInstagram ? await getInstagramInfo(input.videoId) : await getVideoInfo(input.videoId);
   const audioTrack = info.audioTracks.find((a) => a.id === input.audioTrackId) || info.audioTracks[0];
   const audioOnly = input.qualityId === 'audio';
   const quality = info.qualities.find((q) => q.id === input.qualityId);
 
   if (!audioOnly && !quality) throw new HttpError(400, 'That quality is not available for this video.');
-  if (!audioTrack && (audioOnly || !quality?.muxed)) throw new HttpError(400, 'No audio stream is available for this video.');
+  // Instagram sometimes only lists progressive MP4s; yt-dlp can still pull the audio out of those.
+  if (!isInstagram && !audioTrack && (audioOnly || !quality?.muxed)) throw new HttpError(400, 'No audio stream is available for this video.');
 
   const formatSelector = audioOnly
-    ? audioTrack!.id
-    : quality!.muxed || !audioTrack
+    ? audioTrack?.id || 'ba/b'
+    : quality!.muxed
       ? quality!.videoFormatId
-      : `${quality!.videoFormatId}+${audioTrack.id}`;
+      : audioTrack
+        ? `${quality!.videoFormatId}+${audioTrack.id}`
+        : isInstagram
+          ? `${quality!.videoFormatId}+ba/b`
+          : quality!.videoFormatId;
 
   const h = quality?.height || 0;
   const fallbackSelector = audioOnly
-    ? 'bestaudio[ext=m4a]/bestaudio'
-    : `bv*[height<=${h}][vcodec^=avc1]+ba[ext=m4a]/bv*[height<=${h}]+ba/b[height<=${h}]/b`;
+    ? 'bestaudio[ext=m4a]/bestaudio/b'
+    : isInstagram
+      ? 'bv*+ba/b'
+      : `bv*[height<=${h}][vcodec^=avc1]+ba[ext=m4a]/bv*[height<=${h}]+ba/b[height<=${h}]/b`;
 
   const id = uuidv4();
   const job: DownloadJob = {
     id,
+    source,
     videoId: info.id,
     title: info.title,
     qualityId: audioOnly ? 'audio' : quality!.id,
     audioTrackId: audioTrack?.id || '',
-    embedSubtitles: !audioOnly && !!input.embedSubtitles,
+    embedSubtitles: !isInstagram && !audioOnly && !!input.embedSubtitles,
     status: 'queued',
     phase: 'Waiting in queue',
     progress: 0,
@@ -109,10 +125,11 @@ export async function createDownload(input: {
     error: null,
     createdAt: Date.now(),
     finishedAt: null,
+    media: isInstagram ? instagramSource(info.id) : youtubeSource(info.id),
     formatSelector,
     fallbackSelector,
     audioOnly,
-    fileBase: `${FILE_PREFIX}${info.id}_${id.slice(0, 8)}`,
+    fileBase: `${FILE_PREFIX}${isInstagram ? 'ig_' : ''}${info.id}_${id.slice(0, 8)}`,
     filePath: null,
     handle: null,
   };
@@ -168,7 +185,7 @@ async function run(job: DownloadJob) {
   job.status = 'downloading';
   job.phase = 'Starting download';
   const attempt = (selector: string) => {
-    job.handle = downloadMedia(job.videoId, selector, job.audioOnly, job.fileBase, (p) => {
+    job.handle = downloadMedia(job.media, selector, job.audioOnly, job.fileBase, (p) => {
       if (isCancelled(job)) return;
       job.progress = Math.round(p.percent * 10) / 10;
       job.speedBps = p.speedBps;

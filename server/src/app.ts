@@ -11,6 +11,7 @@ import { startDownloadSweeper } from './services/download.service';
 import videoRouter from './routes/video.routes';
 import downloadRouter from './routes/download.routes';
 import chatRouter from './routes/chat.routes';
+import instagramRouter from './routes/instagram.routes';
 
 const app = express();
 app.disable('x-powered-by');
@@ -42,6 +43,7 @@ app.use('/api', rateLimit({ name: 'global', windowMs: 60_000, max: env.RATE_LIMI
 app.use('/api/videos', videoRouter);
 app.use('/api/downloads', downloadRouter);
 app.use('/api/chat', chatRouter);
+app.use('/api/instagram', instagramRouter);
 app.use('/api', (_req, res) => res.status(404).json({ success: false, error: 'Not found' }));
 
 // In production, serve the built React app from the same origin (no CORS needed).

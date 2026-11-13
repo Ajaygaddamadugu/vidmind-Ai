@@ -1,19 +1,47 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, ClipboardPaste, Download, Languages, ListTree, MessageSquare, X } from 'lucide-react';
+import { Download, Film, Languages, ListTree, MessageSquare, Music, ShieldCheck, X, Zap } from 'lucide-react';
 import { extractVideoId, thumbnailUrl } from '../lib/youtube';
+import { extractInstagramId } from '../lib/instagram';
 import { getRecentVideos, removeRecentVideo } from '../lib/storage';
 import { formatTime } from '../lib/format';
-import type { RecentVideo } from '../types';
+import type { Platform, RecentVideo } from '../types';
 import { buttonStyles } from '../lib/styles';
 
-const FEATURES = [
-  { icon: Download, title: 'Download in any quality', text: 'MP4 up to 4K, or MP3 audio — with optional English subtitles built in.' },
-  { icon: Languages, title: 'English from any language', text: 'Hindi, Telugu, Spanish… captions are translated to English automatically.' },
-  { icon: ListTree, title: 'Summary & chapters', text: 'Key takeaways and clickable chapters that jump the player to that moment.' },
-  { icon: MessageSquare, title: 'Ask the video', text: 'Chat with the transcript and get answers with timestamps you can click.' },
-];
+const COPY = {
+  youtube: {
+    highlight: 'any YouTube video',
+    lead: 'Download, understand & chat with ',
+    intro: "Paste a link. Get the video or MP3, an English transcript (even if it's in another language), a summary with chapters, and answers to your questions.",
+    placeholder: 'Paste a YouTube link…',
+    hint: 'Works with youtube.com, youtu.be, Shorts and mobile links · videos up to 2.5 hours',
+    empty: 'Paste a YouTube link to get started.',
+    invalid: "That doesn't look like a YouTube video link. Try something like https://youtu.be/dQw4w9WgXcQ",
+    features: [
+      { icon: Download, title: 'Download in any quality', text: 'MP4 up to 4K, or MP3 audio — with optional English subtitles built in.' },
+      { icon: Languages, title: 'English from any language', text: 'Hindi, Telugu, Spanish… captions are translated to English automatically.' },
+      { icon: ListTree, title: 'Summary & chapters', text: 'Key takeaways and clickable chapters that jump the player to that moment.' },
+      { icon: MessageSquare, title: 'Ask the video', text: 'Chat with the transcript and get answers with timestamps you can click.' },
+    ],
+  },
+  instagram: {
+    highlight: 'any Instagram reel',
+    lead: 'Download ',
+    intro: 'Paste a reel or video post link and save it as an MP4 in the best available quality, or grab just the audio as an MP3.',
+    placeholder: 'Paste an Instagram reel link…',
+    hint: 'Works with public reels and video posts · instagram.com/reel/… or /p/…',
+    empty: 'Paste an Instagram reel link to get started.',
+    invalid: "That doesn't look like an Instagram reel or video link. Try something like https://www.instagram.com/reel/ABC123/",
+    features: [
+      { icon: Film, title: 'Original quality', text: 'Save reels as MP4 in the best resolution Instagram offers.' },
+      { icon: Music, title: 'Audio only', text: 'Turn any reel into an MP3, perfect for songs and voice-overs.' },
+      { icon: Zap, title: 'Fast & simple', text: 'Paste the link and the download starts in a couple of clicks.' },
+      { icon: ShieldCheck, title: 'No login needed', text: 'Works with public posts. Nothing to install, no account to create.' },
+    ],
+  },
+} as const;
 
-export function Landing({ onOpen }: { onOpen: (videoId: string) => void }) {
+export function Landing({ platform, onOpen }: { platform: Platform; onOpen: (platform: Platform, id: string) => void }) {
+  const copy = COPY[platform];
   const [value, setValue] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentVideo[]>(() => getRecentVideos());
@@ -21,24 +49,20 @@ export function Landing({ onOpen }: { onOpen: (videoId: string) => void }) {
 
   useEffect(() => inputRef.current?.focus(), []);
 
-  const submit = (raw = value) => {
-    const id = extractVideoId(raw);
-    if (!raw.trim()) return setError('Paste a YouTube link to get started.');
-    if (!id) return setError("That doesn't look like a YouTube video link. Try something like https://youtu.be/dQw4w9WgXcQ");
-    setError(null);
-    onOpen(id);
+  // Either kind of link works on either tab — we open whichever platform it belongs to.
+  const detect = (raw: string): { platform: Platform; id: string } | null => {
+    const ig = extractInstagramId(raw);
+    if (ig) return { platform: 'instagram', id: ig };
+    const yt = extractVideoId(raw);
+    return yt ? { platform: 'youtube', id: yt } : null;
   };
 
-  const pasteFromClipboard = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      setValue(text);
-      if (extractVideoId(text)) submit(text);
-      else setError("The copied text isn't a YouTube video link.");
-    } catch {
-      inputRef.current?.focus();
-      setError('Your browser blocked clipboard access — press Ctrl+V (⌘V) in the box instead.');
-    }
+  const submit = (raw = value) => {
+    if (!raw.trim()) return setError(copy.empty);
+    const found = detect(raw);
+    if (!found) return setError(copy.invalid);
+    setError(null);
+    onOpen(found.platform, found.id);
   };
 
   return (
@@ -47,11 +71,11 @@ export function Landing({ onOpen }: { onOpen: (videoId: string) => void }) {
         Free · No sign-up
       </span>
       <h1 className="mt-6 max-w-3xl text-center text-4xl font-extrabold leading-[1.1] tracking-tight text-white md:text-6xl">
-        Download, understand &amp; chat with{' '}
-        <span className="bg-gradient-to-r from-rose-400 via-fuchsia-400 to-indigo-400 bg-clip-text text-transparent">any YouTube video</span>
+        {copy.lead}
+        <span className="bg-gradient-to-r from-rose-400 via-fuchsia-400 to-indigo-400 bg-clip-text text-transparent">{copy.highlight}</span>
       </h1>
       <p className="mt-5 max-w-xl text-center text-base leading-relaxed text-slate-400 md:text-lg">
-        Paste a link. Get the video or MP3, an English transcript (even if it's in another language), a summary with chapters, and answers to your questions.
+        {copy.intro}
       </p>
 
       <form
@@ -63,7 +87,7 @@ export function Landing({ onOpen }: { onOpen: (videoId: string) => void }) {
       >
         <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-rose-600 to-indigo-600 opacity-40 blur transition focus-within:opacity-70" />
         <div className="relative flex flex-col gap-2 rounded-2xl border border-slate-800 bg-slate-900 p-2 sm:flex-row sm:items-center">
-          <label htmlFor="url" className="sr-only">YouTube link</label>
+          <label htmlFor="url" className="sr-only">{platform === 'instagram' ? 'Instagram link' : 'YouTube link'}</label>
           <input
             ref={inputRef}
             id="url"
@@ -78,38 +102,32 @@ export function Landing({ onOpen }: { onOpen: (videoId: string) => void }) {
             }}
             onPaste={(e) => {
               const text = e.clipboardData.getData('text');
-              if (extractVideoId(text)) {
+              if (detect(text)) {
                 e.preventDefault();
                 setValue(text);
                 submit(text);
               }
             }}
-            placeholder="Paste a YouTube link…"
+            placeholder={copy.placeholder}
             className="min-w-0 flex-1 bg-transparent px-3 py-3 text-base text-white placeholder-slate-500 outline-none"
           />
-          <div className="flex gap-2">
-            <button type="button" onClick={pasteFromClipboard} className={`${buttonStyles.secondary} flex-1 sm:flex-none`} title="Paste from clipboard">
-              <ClipboardPaste className="h-4 w-4" />
-              <span className="sm:hidden md:inline">Paste</span>
-            </button>
-            <button type="submit" className={`${buttonStyles.primary} flex-1 bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 sm:flex-none`}>
-              Start
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
+          <button type="submit" className={`${buttonStyles.primary} bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500`}>
+            <Download className="h-4 w-4" />
+            Download
+          </button>
         </div>
       </form>
       <p className={`mt-3 min-h-5 text-center text-sm ${error ? 'text-rose-400' : 'text-slate-500'}`} role={error ? 'alert' : undefined}>
-        {error || 'Works with youtube.com, youtu.be, Shorts and mobile links · videos up to 2.5 hours'}
+        {error || copy.hint}
       </p>
 
-      {recent.length > 0 && (
+      {platform === 'youtube' && recent.length > 0 && (
         <div className="mt-12 w-full">
           <h2 className="mb-3 text-sm font-semibold text-slate-300">Recently opened</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {recent.map((v) => (
               <div key={v.id} className="group relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900/60 transition hover:border-slate-600">
-                <button type="button" onClick={() => onOpen(v.id)} className="block w-full text-left cursor-pointer">
+                <button type="button" onClick={() => onOpen('youtube', v.id)} className="block w-full text-left cursor-pointer">
                   <div className="relative aspect-video bg-slate-800">
                     <img src={thumbnailUrl(v.id)} alt="" loading="lazy" className="h-full w-full object-cover" />
                     <span className="absolute bottom-1.5 right-1.5 rounded bg-black/80 px-1.5 py-0.5 text-[11px] font-semibold text-white">{formatTime(v.duration)}</span>
@@ -137,7 +155,7 @@ export function Landing({ onOpen }: { onOpen: (videoId: string) => void }) {
       )}
 
       <div className="mt-14 grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {FEATURES.map(({ icon: Icon, title, text }) => (
+        {copy.features.map(({ icon: Icon, title, text }) => (
           <div key={title} className="rounded-2xl border border-slate-800/80 bg-slate-900/40 p-5">
             <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-500/15 text-indigo-300">
               <Icon className="h-4.5 w-4.5" />
