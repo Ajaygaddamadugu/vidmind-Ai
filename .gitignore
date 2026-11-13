@@ -34,3 +34,6 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Browser cookies (YouTube / Instagram sessions) — as sensitive as passwords
+*cookies*.txt

@@ -11,3 +11,4 @@ server/downloads
 **/__pycache__
 .vscode
 .idea
+**/*cookies*.txt
